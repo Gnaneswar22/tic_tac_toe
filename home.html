@@ -1,0 +1,1821 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic-Tac-Toe Game</title>
+  <!-- PeerJS library for WebRTC connections -->
+  <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+  <style>
+    :root {
+      --primary-blue: #42c6ff;
+      --primary-pink: #ff4d79;
+      --light-purple: #e9d5ff;
+      --dark-blue: #1a1a2e;
+      --light-bg: #f0f4ff;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      background: linear-gradient(135deg, var(--light-bg) 0%, var(--light-purple) 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background-color: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 500px;
+      overflow: hidden;
+      position: relative;
+      padding-bottom: 20px;
+    }
+    
+    .game-header {
+      text-align: center;
+      padding: 30px 0;
+      position: relative;
+    }
+    
+    .title-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    
+    .game-title {
+      font-size: 3rem;
+      font-weight: bold;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      line-height: 0.9;
+      margin: 0;
+      text-align: center;
+    }
+    
+    .title-word {
+      display: block;
+      margin: 0;
+    }
+    
+    .title-word:first-child {
+      color: #ffcc00;
+    }
+    
+    .title-word:nth-child(2) {
+      color: rgb(84, 39, 219);
+    }
+    
+    .title-word:last-child {
+      color: rgb(234, 10, 144);
+    }
+    
+    .symbol {
+      position: absolute;
+      z-index: -1;
+    }
+    
+    .symbol-x {
+      color: var(--primary-blue);
+      font-size: 8rem;
+      font-weight: bold;
+      top: -30px;
+      right: 50px;
+      transform: rotate(15deg);
+    }
+    
+    .symbol-o {
+      color: var(--primary-pink);
+      font-size: 8rem;
+      font-weight: bold;
+      bottom: -30px;
+      left: 30px;
+    }
+    
+    .game-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      padding: 0 30px;
+      margin-bottom: 30px;
+    }
+    
+    .menu-button {
+      padding: 15px;
+      border-radius: 12px;
+      border: none;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: white;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .single-player {
+      background-color: var(--dark-blue);
+    }
+    
+    .two-player {
+      background-color: var(--primary-pink);
+    }
+    
+    .how-to-play {
+      background-color: #ffcc00;
+      color: #333;
+    }
+    
+    .menu-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .menu-button:active {
+      transform: translateY(0);
+    }
+    
+    .game-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      margin-bottom: 20px;
+    }
+    
+    .difficulty-select {
+      background-color: #f0f4ff;
+      border: 2px solid #e1e5ee;
+      border-radius: 50px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      color: var(--dark-blue);
+      transition: all 0.2s ease;
+    }
+    
+    .difficulty-select:focus {
+      border-color: var(--primary-blue);
+    }
+    
+    .score-display {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: bold;
+      color: var(--dark-blue);
+      position: relative;
+    }
+    
+    .game-board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 0 auto;
+      width: 90%;
+      max-width: 350px;
+      aspect-ratio: 1/1;
+    }
+    
+    .cell {
+      background-color: #f0f4ff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+    
+    .cell:hover {
+      background-color: #e9d5ff;
+    }
+    
+    .cell[data-value="X"] {
+      color: var(--primary-blue);
+    }
+    
+    .cell[data-value="O"] {
+      color: var(--primary-pink);
+    }
+    
+    .game-status {
+      text-align: center;
+      margin: 20px 0;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--dark-blue);
+      min-height: 30px;
+    }
+    
+    .game-controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .control-button {
+      padding: 10px 20px;
+      border-radius: 50px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background-color: var(--primary-blue);
+      color: white;
+    }
+    
+    .control-button:hover {
+      background-color: #35a7db;
+    }
+    
+    .online-counter {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.8);
+      background-color: rgba(0, 0, 0, 0.3);
+      padding: 3px 8px;
+      border-radius: 10px;
+    }
+    
+    .timer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      background-color: #f0f4ff;
+      border-radius: 50%;
+      margin: 10px auto;
+      border: 2px solid #e1e5ee;
+      font-weight: bold;
+      color: var(--dark-blue);
+    }
+    
+    .player-indicator {
+      display: flex;
+      justify-content: space-around;
+      margin: 10px auto;
+      max-width: 300px;
+    }
+    
+    .player {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+    }
+    
+    .player-x {
+      color: var(--primary-blue);
+    }
+    
+    .player-o {
+      color: var(--primary-pink);
+    }
+    
+    .player-active {
+      background-color: #f0f4ff;
+      font-weight: bold;
+    }
+    
+    /* Game mode screens */
+    .screen {
+      display: none;
+    }
+    
+    .screen.active {
+      display: block;
+    }
+    
+    .game-mode-header {
+      background-color: var(--primary-pink);
+      color: white;
+      padding: 15px;
+      text-align: center;
+      position: relative;
+    }
+    
+    .back-button {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    
+    /* Multiplayer options */
+    .multiplayer-options {
+      padding: 20px;
+    }
+    
+    .option-box {
+      background-color: #f0f4ff;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .option-box h3 {
+      margin-bottom: 10px;
+      color: var(--dark-blue);
+    }
+    
+    .option-box p {
+      margin-bottom: 15px;
+      color: #555;
+    }
+    
+    .link-container {
+      display: flex;
+      margin: 10px 0;
+    }
+    
+    .link-container input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px 0 0 5px;
+      font-size: 0.9rem;
+    }
+    
+    .link-container button {
+      padding: 10px 15px;
+      background-color: var(--primary-blue);
+      color: white;
+      border: none;
+      border-radius: 0 5px 5px 0;
+      cursor: pointer;
+    }
+    
+    .waiting-text {
+      color: var(--primary-pink);
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    
+    /* How to play screen */
+    .how-to-play-content {
+      padding: 20px;
+    }
+    
+    .how-to-play-content h3 {
+      margin: 15px 0 10px;
+      color: var(--dark-blue);
+    }
+    
+    .how-to-play-content ul {
+      padding-left: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .how-to-play-content li {
+      margin-bottom: 5px;
+    }
+    
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal.active {
+      display: flex;
+    }
+    
+    .modal-content {
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    
+    .loader {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid var(--primary-blue);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto 0;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Sound toggle button */
+    .sound-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.7);
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      z-index: 10;
+      transition: all 0.2s ease;
+    }
+    
+    .sound-toggle:hover {
+      background-color: rgba(255, 255, 255, 0.9);
+      transform: scale(1.1);
+    }
+    
+    /* Caption styles */
+    .game-caption {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%) translateY(50px);
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 1rem;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 50;
+      text-align: center;
+      width: auto;
+      max-width: 80%;
+    }
+    
+    .caption-show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    
+    .caption-win {
+      background-color: rgba(46, 204, 113, 0.8);
+    }
+    
+    .caption-lose {
+      background-color: rgba(231, 76, 60, 0.8);
+    }
+    
+    .caption-draw {
+      background-color: rgba(52, 152, 219, 0.8);
+    }
+    
+    .caption-move {
+      background-color: rgba(52, 73, 94, 0.8);
+    }
+    
+    /* Confetti styles */
+    #confetti-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+      overflow: hidden;
+    }
+    
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      top: -10px;
+      opacity: 0;
+      transform: translateY(0) rotate(0);
+      animation: fall linear forwards;
+    }
+    
+    @keyframes fall {
+      0% {
+        opacity: 1;
+        transform: translateY(0) rotate(0);
+      }
+      100% {
+        opacity: 0.3;
+        transform: translateY(100vh) rotate(720deg);
+      }
+    }
+    
+    /* Fireworks styles */
+    .fireworks-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 99;
+    }
+    
+    .firework {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      transform: scale(0);
+      background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,200,0,1) 40%, rgba(255,0,0,1) 100%);
+      box-shadow: 0 0 40px 10px rgba(255, 200, 0, 0.8);
+      animation: explode 1s ease-out forwards;
+    }
+    
+    @keyframes explode {
+      0% {
+        transform: scale(0);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(15);
+        opacity: 0.8;
+      }
+      100% {
+        transform: scale(30);
+        opacity: 0;
+      }
+    }
+    
+    /* Points animation */
+    .points-animation {
+      position: absolute;
+      right: -20px;
+      top: -20px;
+      color: #ffcc00;
+      font-size: 1.5rem;
+      font-weight: bold;
+      text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+      animation: points-up 2s ease-out forwards;
+    }
+    
+    @keyframes points-up {
+      0% {
+        transform: translateY(0) scale(0.5);
+        opacity: 0;
+      }
+      20% {
+        transform: translateY(-20px) scale(1.2);
+        opacity: 1;
+      }
+      80% {
+        transform: translateY(-40px) scale(1);
+        opacity: 0.8;
+      }
+      100% {
+        transform: translateY(-60px) scale(0.8);
+        opacity: 0;
+      }
+    }
+    
+    /* Cell click effect */
+    .cell-click-effect {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.5);
+      transform: scale(0);
+      pointer-events: none;
+      animation: click-ripple 0.6s ease-out forwards;
+    }
+    
+    @keyframes click-ripple {
+      0% {
+        transform: scale(0);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(3);
+        opacity: 0;
+      }
+    }
+    
+    @media (max-width: 500px) {
+      .game-title {
+        font-size: 2.5rem;
+      }
+      
+      .symbol-x, .symbol-o {
+        font-size: 6rem;
+      }
+      
+      .game-board {
+        width: 95%;
+      }
+      
+      .cell {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Menu Screen -->
+    <div class="screen active" id="menu-screen">
+      <div class="game-header">
+        <span class="symbol symbol-x">X</span>
+        <span class="symbol symbol-o">O</span>
+        <div class="title-container">
+          <h1 class="game-title">
+            <span class="title-word">Tic</span>
+            <span class="title-word">Tac</span>
+            <span class="title-word">Toe</span>
+          </h1>
+        </div>
+        <div class="online-counter">P2P Mode</div>
+      </div>
+      
+      <div class="game-menu">
+        <button class="menu-button single-player" id="single-player-btn">Single Player</button>
+        <button class="menu-button two-player" id="two-player-btn">Two Player</button>
+        <button class="menu-button how-to-play" id="how-to-play-btn">How To Play</button>
+      </div>
+    </div>
+    
+    <!-- Game Screen -->
+    <div class="screen" id="game-screen">
+      <div class="game-mode-header">
+        <button class="back-button" id="back-btn">←</button>
+        <span id="game-mode-title">GAME</span>
+      </div>
+      
+      <div class="timer" id="timer">0:00</div>
+      
+      <div class="game-info">
+        <select class="difficulty-select" id="difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+        <div class="score-display">
+          SCORE: <span id="score">0</span>
+        </div>
+      </div>
+      
+      <div class="player-indicator">
+        <div class="player player-x player-active" id="player-x">
+          <span>X</span> <span id="player-x-name">You</span>
+        </div>
+        <div class="player player-o" id="player-o">
+          <span>O</span> <span id="player-o-name">Computer</span>
+        </div>
+      </div>
+      
+      <div class="game-board" id="board"></div>
+      
+      <div class="game-status" id="status"></div>
+      
+      <div class="game-controls">
+        <button class="control-button" id="reset-btn">Restart Game</button>
+      </div>
+    </div>
+    
+    <!-- Multiplayer Options Screen -->
+    <div class="screen" id="multiplayer-screen">
+      <div class="game-mode-header">
+        <button class="back-button" id="multiplayer-back-btn">←</button>
+        <span>MULTIPLAYER</span>
+      </div>
+      
+      <div class="multiplayer-options">
+        <div class="option-box">
+          <h3>Create New Game</h3>
+          <p>Start a new game and invite a friend to play</p>
+          <button class="control-button" id="create-game-btn">Create Game</button>
+          
+          <div id="invitation-box" style="display: none;">
+            <p>Share this link with your friend:</p>
+            <div class="link-container">
+              <input type="text" id="invitation-link" readonly>
+              <button id="copy-link-btn">Copy</button>
+            </div>
+            <p class="waiting-text">Waiting for opponent to join...</p>
+          </div>
+        </div>
+        
+        <div class="option-box">
+          <h3>Join Game</h3>
+          <p>Join a game with the invitation link or ID</p>
+          <div class="link-container">
+            <input type="text" id="peer-id-input" placeholder="Enter game ID">
+            <button id="join-game-btn">Join</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- How To Play Screen -->
+    <div class="screen" id="how-to-play-screen">
+      <div class="game-mode-header">
+        <button class="back-button" id="how-to-play-back-btn">←</button>
+        <span>HOW TO PLAY</span>
+      </div>
+      <div class="how-to-play-content">
+        <h3>Game Rules:</h3>
+        <ul>
+          <li>Players take turns placing X or O on the board</li>
+          <li>First player to get 3 in a row (horizontally, vertically, or diagonally) wins</li>
+          <li>If all spaces are filled with no winner, the game is a draw</li>
+        </ul>
+        
+        <h3>Multiplayer Mode:</h3>
+        <ul>
+          <li><strong>Create Game:</strong> Generate an invitation link to share with a friend</li>
+          <li><strong>Join Game:</strong> Use an invitation link or game ID to join a friend's game</li>
+          <li>The game runs peer-to-peer, directly between your browsers</li>
+        </ul>
+        
+        <h3>Difficulty Levels (Single Player):</h3>
+        <ul>
+          <li><strong>Easy:</strong> Computer makes random moves</li>
+          <li><strong>Medium:</strong> Computer can block your winning moves</li>
+          <li><strong>Hard:</strong> Computer plays optimally using minimax algorithm</li>
+        </ul>
+      </div>
+    </div>
+    
+    <!-- Connection Status Modal -->
+    <div class="modal" id="connection-modal">
+      <div class="modal-content">
+        <h3 id="connection-status">Connecting...</h3>
+        <div class="loader"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // PeerJS configuration with multiple fallback options
+    const peerConfig = {
+      debug: 2,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' }
+        ]
+      }
+    };
+
+    // Sound effects
+    const sounds = {
+      move: new Audio('https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3'),
+      win: new Audio('https://assets.mixkit.co/active_storage/sfx/583/583-preview.mp3'),
+      draw: new Audio('https://assets.mixkit.co/active_storage/sfx/270/270-preview.mp3'),
+      opponentMove: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'),
+      buttonClick: new Audio('https://assets.mixkit.co/active_storage/sfx/270/270-preview.mp3'),
+      menuSelect: new Audio('https://assets.mixkit.co/active_storage/sfx/270/270-preview.mp3'),
+      cellHover: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3')
+    };
+
+    // Adjust sound volumes
+    sounds.move.volume = 0.3;
+    sounds.win.volume = 0.5;
+    sounds.draw.volume = 0.4;
+    sounds.opponentMove.volume = 0.3;
+    sounds.buttonClick.volume = 0.2;
+    sounds.menuSelect.volume = 0.2;
+    sounds.cellHover.volume = 0.1;
+
+    // Try different PeerJS servers if the default fails
+    function createPeerWithFallback(attempt = 0) {
+      const servers = [
+        {}, // Default PeerJS server
+        { host: 'peerjs-server.herokuapp.com', secure: true, port: 443 },
+        { host: 'peerjs.herokuapp.com', secure: true, port: 443 },
+        { host: '0.peerjs.com', secure: true, port: 443 }
+      ];
+      
+      if (attempt >= servers.length) {
+        showModal('Failed to connect to any PeerJS server. Please try again later.');
+        return null;
+      }
+      
+      const config = { ...peerConfig, ...servers[attempt] };
+      const newPeer = new Peer(null, config);
+      
+      newPeer.on('error', (err) => {
+        if (err.type === 'network' || err.type === 'server-error') {
+          console.error(`PeerJS server ${attempt} failed:`, err);
+          newPeer.destroy();
+          return createPeerWithFallback(attempt + 1);
+        }
+      });
+      
+      return newPeer;
+    }
+
+    // DOM Elements
+    const menuScreen = document.getElementById('menu-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const multiplayerScreen = document.getElementById('multiplayer-screen');
+    const howToPlayScreen = document.getElementById('how-to-play-screen');
+    const connectionModal = document.getElementById('connection-modal');
+    const connectionStatus = document.getElementById('connection-status');
+
+    // Navigation buttons
+    const singlePlayerBtn = document.getElementById('single-player-btn');
+    const twoPlayerBtn = document.getElementById('two-player-btn');
+    const howToPlayBtn = document.getElementById('how-to-play-btn');
+    const backBtn = document.getElementById('back-btn');
+    const multiplayerBackBtn = document.getElementById('multiplayer-back-btn');
+    const howToPlayBackBtn = document.getElementById('how-to-play-back-btn');
+
+    // Game elements
+    const boardElement = document.getElementById('board');
+    const statusElement = document.getElementById('status');
+    const resetButton = document.getElementById('reset-btn');
+    const difficultySelect = document.getElementById('difficulty');
+    const gameModeTitle = document.getElementById('game-mode-title');
+    const playerXName = document.getElementById('player-x-name');
+    const playerOName = document.getElementById('player-o-name');
+    const playerXIndicator = document.getElementById('player-x');
+    const playerOIndicator = document.getElementById('player-o');
+    const timerElement = document.getElementById('timer');
+    const scoreElement = document.getElementById('score');
+
+    // Multiplayer elements
+    const createGameBtn = document.getElementById('create-game-btn');
+    const invitationBox = document.getElementById('invitation-box');
+    const invitationLink = document.getElementById('invitation-link');
+    const copyLinkBtn = document.getElementById('copy-link-btn');
+    const peerIdInput = document.getElementById('peer-id-input');
+    const joinGameBtn = document.getElementById('join-game-btn');
+
+    // Game state
+    let board = ["", "", "", "", "", "", "", "", ""];
+    let currentPlayer = "X";
+    let gameActive = true;
+    let gameMode = "single"; // "single", "local", "online"
+    let difficulty = "easy";
+    let score = 0;
+    let timerInterval;
+    let seconds = 0;
+    let isHost = false;
+    let peer;
+    let conn;
+    let myPeerId = '';
+    let opponentId = '';
+    let soundEnabled = true;
+
+    // Winning combinations
+    const winningCombinations = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+
+    // Caption element
+    const captionElement = document.createElement('div');
+    captionElement.classList.add('game-caption');
+    document.querySelector('.container').appendChild(captionElement);
+
+    // Create confetti container
+    const confettiContainer = document.createElement('div');
+    confettiContainer.id = 'confetti-container';
+    document.body.appendChild(confettiContainer);
+
+    // Add a sound toggle button
+    const soundToggleBtn = document.createElement('button');
+    soundToggleBtn.classList.add('sound-toggle');
+    soundToggleBtn.innerHTML = '🔊';
+    soundToggleBtn.title = 'Toggle Sound';
+    document.querySelector('.container').appendChild(soundToggleBtn);
+
+
+
+    // Show caption with animation
+    function showCaption(text, type = 'info') {
+      captionElement.textContent = text;
+      captionElement.className = 'game-caption';
+      captionElement.classList.add(`caption-${type}`);
+      captionElement.classList.add('caption-show');
+      
+      setTimeout(() => {
+        captionElement.classList.remove('caption-show');
+      }, 2000);
+    }
+
+    // Create click effect
+    function createClickEffect(x, y) {
+      const effect = document.createElement('div');
+      effect.classList.add('cell-click-effect');
+      effect.style.left = x + 'px';
+      effect.style.top = y + 'px';
+      document.body.appendChild(effect);
+      
+      setTimeout(() => {
+        effect.remove();
+      }, 600);
+    }
+
+    // Create confetti pieces
+    function createConfetti() {
+      const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+      
+      for (let i = 0; i < 150; i++) {
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti');
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+        confetti.style.animationDelay = (Math.random() * 2) + 's';
+        confettiContainer.appendChild(confetti);
+      }
+      
+      setTimeout(() => {
+        confettiContainer.innerHTML = '';
+      }, 5000);
+    }
+
+    // Create fireworks
+    function createFireworks() {
+      const fireworksContainer = document.createElement('div');
+      fireworksContainer.classList.add('fireworks-container');
+      document.body.appendChild(fireworksContainer);
+      
+      for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+          const firework = document.createElement('div');
+          firework.classList.add('firework');
+          firework.style.left = (Math.random() * 80 + 10) + 'vw';
+          firework.style.top = (Math.random() * 40 + 20) + 'vh';
+          fireworksContainer.appendChild(firework);
+          
+          setTimeout(() => {
+            firework.remove();
+          }, 1000);
+        }, i * 300);
+      }
+      
+      setTimeout(() => {
+        fireworksContainer.remove();
+      }, 3000);
+    }
+
+    // Show celebration effects
+    function celebrate() {
+      createConfetti();
+      createFireworks();
+      
+      if (soundEnabled) {
+        sounds.win.play();
+      }
+      
+      // Add points animation
+      const pointsAnimation = document.createElement('div');
+      pointsAnimation.classList.add('points-animation');
+      pointsAnimation.textContent = '+100';
+      document.querySelector('.score-display').appendChild(pointsAnimation);
+      
+      setTimeout(() => {
+        pointsAnimation.remove();
+      }, 2000);
+    }
+
+    // Check URL for invitation
+    function checkForInvitation() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const gameId = urlParams.get('join');
+      
+      if (gameId) {
+        // We have an invitation link
+        showScreen(multiplayerScreen);
+        peerIdInput.value = gameId;
+        
+        // Auto-join if there's a game ID in the URL
+        setTimeout(() => {
+          joinGame(gameId);
+        }, 1000);
+      }
+    }
+
+    // Initialize PeerJS
+    function initializePeer() {
+      // Show connection modal
+      showModal('Initializing connection...');
+      
+      // Create new Peer with fallback options
+      peer = createPeerWithFallback();
+      
+      if (!peer) {
+        hideModal();
+        return;
+      }
+      
+      peer.on('open', (id) => {
+        // Hide connection modal
+        hideModal();
+        myPeerId = id;
+        console.log('My peer ID is: ' + id);
+      });
+      
+      peer.on('connection', (connection) => {
+        conn = connection;
+        isHost = true;
+        
+        // Hide waiting message if visible
+        if (document.querySelector('.waiting-text')) {
+          document.querySelector('.waiting-text').style.display = 'none';
+        }
+        
+        setupConnection();
+        
+        // Start game
+        showScreen(gameScreen);
+        setupMultiplayerGame();
+        showCaption('Opponent joined the game!', 'info');
+        
+        if (soundEnabled) {
+          sounds.menuSelect.play();
+        }
+      });
+      
+      peer.on('error', (err) => {
+        console.error('Peer connection error:', err);
+        showModal('Connection error: ' + err.type);
+        setTimeout(hideModal, 3000);
+      });
+    }
+
+    // Setup connection event handlers
+    function setupConnection() {
+      conn.on('open', () => {
+        console.log('Connection established');
+        hideModal();
+      });
+      
+      conn.on('data', (data) => {
+        console.log('Received data:', data);
+        
+        if (data.type === 'move') {
+          // Opponent made a move
+          handleOpponentMove(data.position);
+        } else if (data.type === 'reset') {
+          // Opponent reset the game
+          resetGame();
+          showCaption('Game was reset by opponent', 'info');
+        } else if (data.type === 'chat') {
+          // Chat message (for future implementation)
+        }
+      });
+      
+      conn.on('close', () => {
+        statusElement.textContent = 'Opponent disconnected';
+        showCaption('Opponent disconnected from the game', 'lose');
+        gameActive = false;
+      });
+      
+      conn.on('error', (err) => {
+        console.error('Connection error:', err);
+        statusElement.textContent = 'Connection error';
+        showCaption('Connection error occurred', 'lose');
+      });
+    }
+
+    // Create a new game and generate invitation link
+    function createGame() {
+      if (soundEnabled) {
+        sounds.buttonClick.play();
+      }
+      
+      if (!peer) {
+        initializePeer();
+        
+        peer.on('open', (id) => {
+          // Generate invitation link
+          const inviteUrl = `${window.location.origin}${window.location.pathname}?join=${id}`;
+          invitationLink.value = inviteUrl;
+          invitationBox.style.display = 'block';
+          showCaption('Game created! Share the link with a friend', 'info');
+        });
+      } else {
+        // Generate invitation link
+        const inviteUrl = `${window.location.origin}${window.location.pathname}?join=${myPeerId}`;
+        invitationLink.value = inviteUrl;
+        invitationBox.style.display = 'block';
+        showCaption('Game created! Share the link with a friend', 'info');
+      }
+    }
+
+    // Join an existing game
+    function joinGame(peerId) {
+      if (soundEnabled) {
+        sounds.buttonClick.play();
+      }
+      
+      if (!peer) {
+        initializePeer();
+        
+        peer.on('open', () => {
+          connectToPeer(peerId);
+        });
+      } else {
+        connectToPeer(peerId);
+      }
+    }
+
+    // Connect to another peer
+    function connectToPeer(peerId) {
+      showModal('Connecting to game...');
+      
+      try {
+        conn = peer.connect(peerId, {
+          reliable: true
+        });
+        
+        isHost = false;
+        opponentId = peerId;
+        
+        if (conn) {
+          conn.on('open', () => {
+            hideModal();
+            setupConnection();
+            showScreen(gameScreen);
+            setupMultiplayerGame();
+            showCaption('Connected to opponent\'s game', 'info');
+            
+            if (soundEnabled) {
+              sounds.menuSelect.play();
+            }
+          });
+          
+          conn.on('error', (err) => {
+            console.error('Connection error:', err);
+            showModal('Failed to connect. Check the game ID and try again.');
+            setTimeout(hideModal, 3000);
+          });
+        } else {
+          showModal('Failed to create connection');
+          setTimeout(hideModal, 3000);
+        }
+      } catch (err) {
+        console.error('Connection error:', err);
+        showModal('Failed to connect. Check the game ID and try again.');
+        setTimeout(hideModal, 3000);
+      }
+    }
+
+    // Set up multiplayer game
+    function setupMultiplayerGame() {
+      gameMode = 'online';
+      gameModeTitle.textContent = 'MULTIPLAYER';
+      
+      // Set player names
+      playerXName.textContent = isHost ? 'You' : 'Opponent';
+      playerOName.textContent = isHost ? 'Opponent' : 'You';
+      
+      // Hide difficulty selector in multiplayer
+      document.querySelector('.difficulty-select').style.display = 'none';
+      
+      // Reset game
+      resetGame();
+    }
+
+    // Handle opponent's move
+    function handleOpponentMove(position) {
+      if (!gameActive || board[position] !== "") return;
+      
+      // Play opponent move sound
+      if (soundEnabled) {
+        sounds.opponentMove.play();
+      }
+      
+      // Create click effect at the cell position
+      const cell = document.querySelector(`.cell[data-index="${position}"]`);
+      const rect = cell.getBoundingClientRect();
+      createClickEffect(rect.left + rect.width/2, rect.top + rect.height/2);
+      
+      // Make move on the board
+      board[position] = currentPlayer;
+      updateBoard();
+      
+      // Show caption for opponent's move
+      showCaption('Opponent placed ' + currentPlayer + ' at position ' + (position + 1), 'move');
+      
+      // Check for win/draw
+      if (checkWin(currentPlayer)) {
+        highlightWinningCells(currentPlayer);
+        
+        if ((currentPlayer === 'X' && !isHost) || (currentPlayer === 'O' && isHost)) {
+          statusElement.textContent = 'Opponent wins!';
+          showCaption('Your opponent wins this round!', 'lose');
+        } else {
+          statusElement.textContent = 'You win!';
+          showCaption('Congratulations! You win!', 'win');
+          celebrate();
+        }
+        
+        gameActive = false;
+        stopTimer();
+        return;
+      }
+      
+      if (isDraw()) {
+        statusElement.textContent = "It's a draw!";
+        showCaption('Game ended in a draw!', 'draw');
+        if (soundEnabled) {
+          sounds.draw.play();
+        }
+        gameActive = false;
+        stopTimer();
+        return;
+      }
+      
+      // Switch player
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      updatePlayerIndicator();
+    }
+
+    // Send move to opponent
+    function sendMove(position) {
+      if (conn && conn.open) {
+        conn.send({
+          type: 'move',
+          position: position
+        });
+      }
+    }
+
+    // Copy invitation link
+    function copyLink() {
+      if (soundEnabled) {
+        sounds.buttonClick.play();
+      }
+      
+      invitationLink.select();
+      document.execCommand('copy');
+      
+      copyLinkBtn.textContent = 'Copied!';
+      showCaption('Link copied to clipboard!', 'info');
+      
+      setTimeout(() => {
+        copyLinkBtn.textContent = 'Copy';
+      }, 2000);
+    }
+
+    // Show modal
+    function showModal(message) {
+      connectionStatus.textContent = message;
+      connectionModal.classList.add('active');
+    }
+
+    // Hide modal
+    function hideModal() {
+      connectionModal.classList.remove('active');
+    }
+
+    // Show screen
+    function showScreen(screen) {
+      menuScreen.classList.remove('active');
+      gameScreen.classList.remove('active');
+      multiplayerScreen.classList.remove('active');
+      howToPlayScreen.classList.remove('active');
+      screen.classList.add('active');
+      
+      if (soundEnabled) {
+        sounds.menuSelect.play();
+      }
+    }
+
+    // Create game board
+    function createBoard() {
+      boardElement.innerHTML = '';
+      board.forEach((value, index) => {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.index = index;
+        cell.dataset.value = value;
+        if (value) {
+          cell.textContent = value;
+        }
+        
+        // Add hover sound effect
+        cell.addEventListener('mouseenter', () => {
+          if (gameActive && board[index] === "" && soundEnabled) {
+            sounds.cellHover.currentTime = 0;
+            sounds.cellHover.volume = 0.05;
+            sounds.cellHover.play();
+          }
+        });
+        
+        boardElement.appendChild(cell);
+      });
+    }
+
+    // Update board UI
+    function updateBoard() {
+      document.querySelectorAll('.cell').forEach((cell, index) => {
+        const value = board[index];
+        cell.textContent = value;
+        cell.dataset.value = value;
+        
+        if (cell.textContent !== cell.getAttribute('data-last-value')) {
+          cell.classList.remove('cell-animation');
+          void cell.offsetWidth; // Force reflow
+          cell.classList.add('cell-animation');
+          cell.setAttribute('data-last-value', cell.textContent);
+        }
+      });
+    }
+
+    // Update player indicator
+    function updatePlayerIndicator() {
+      if (currentPlayer === "X") {
+        playerXIndicator.classList.add('player-active');
+        playerOIndicator.classList.remove('player-active');
+      } else {
+        playerXIndicator.classList.remove('player-active');
+        playerOIndicator.classList.add('player-active');
+      }
+    }
+
+    // Handle cell click
+    function handleCellClick(e) {
+      const index = parseInt(e.target.dataset.index);
+      
+      // Check if cell is already filled or game is not active
+      if (!gameActive || board[index] !== "") return;
+      
+      // Create click effect
+      const rect = e.target.getBoundingClientRect();
+      createClickEffect(e.clientX, e.clientY);
+      
+      // Handle different game modes
+      if (gameMode === 'single') {
+        // Single player mode
+        if (currentPlayer === "X") {
+          makeMove(index);
+          
+          // Computer's turn
+          if (gameActive) {
+            setTimeout(() => computerMove(), 800);
+          }
+        }
+      } else if (gameMode === 'online') {
+        // Online multiplayer mode
+        const mySymbol = isHost ? "X" : "O";
+        
+        // Only allow moves on player's turn
+        if (currentPlayer === mySymbol) {
+          makeMove(index);
+          sendMove(index);
+        } else {
+          showCaption("It's not your turn yet!", 'info');
+        }
+      } else {
+        // Local multiplayer mode
+        makeMove(index);
+      }
+    }
+
+    // Make a move
+    function makeMove(index) {
+      board[index] = currentPlayer;
+      updateBoard();
+      
+      // Play move sound
+      if (soundEnabled) {
+        sounds.move.play();
+      }
+      
+      // Show caption for move
+      if (gameMode === 'single') {
+        showCaption('You placed ' + currentPlayer + ' at position ' + (index + 1), 'move');
+      } else if (gameMode === 'online') {
+        const playerName = isHost ? 'You' : 'Opponent';
+        showCaption(playerName + ' placed ' + currentPlayer + ' at position ' + (index + 1), 'move');
+      }
+      
+      if (checkWin(currentPlayer)) {
+        highlightWinningCells(currentPlayer);
+        
+        if (gameMode === 'single' && currentPlayer === 'X') {
+          statusElement.textContent = 'You win!';
+          showCaption('Congratulations! You win!', 'win');
+          celebrate(); // Add celebration effects
+        } else if (gameMode === 'single' && currentPlayer === 'O') {
+          statusElement.textContent = 'Computer wins!';
+          showCaption('Computer wins this round!', 'lose');
+          if (soundEnabled) {
+            sounds.opponentMove.play();
+          }
+        } else if (gameMode === 'online') {
+          const winnerName = (currentPlayer === 'X' && isHost) || (currentPlayer === 'O' && !isHost) ? 'You win!' : 'Opponent wins!';
+          statusElement.textContent = winnerName;
+          
+          if ((currentPlayer === 'X' && isHost) || (currentPlayer === 'O' && !isHost)) {
+            showCaption('Congratulations! You win!', 'win');
+            celebrate(); // Add celebration effects
+          } else {
+            showCaption('Your opponent wins this round!', 'lose');
+          }
+        }
+        
+        gameActive = false;
+        stopTimer();
+        
+        if (currentPlayer === "X" && gameMode === 'single') {
+          score += 100;
+          scoreElement.textContent = score;
+        }
+        
+        return;
+      }
+      
+      if (isDraw()) {
+        statusElement.textContent = "It's a draw!";
+        showCaption('Game ended in a draw!', 'draw');
+        if (soundEnabled) {
+          sounds.draw.play();
+        }
+        gameActive = false;
+        stopTimer();
+        return;
+      }
+      
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      updatePlayerIndicator();
+    }
+
+    // Computer move
+    function computerMove() {
+      if (!gameActive) return;
+
+      let index;
+      
+      switch(difficulty) {
+        case "easy":
+          index = getRandomMove();
+          break;
+        case "medium":
+          index = getMediumMove();
+          break;
+        case "hard":
+          index = getBestMove();
+          break;
+        default:
+          index = getRandomMove();
+      }
+
+      if (index !== -1) {
+        // Add a slight delay before computer's move
+        setTimeout(() => {
+          // Play opponent move sound
+          if (soundEnabled) {
+            sounds.opponentMove.play();
+          }
+          
+          // Show caption for computer's move
+          showCaption('Computer placed O at position ' + (index + 1), 'move');
+          
+          // Create click effect at the cell position
+          const cell = document.querySelector(`.cell[data-index="${index}"]`);
+          const rect = cell.getBoundingClientRect();
+          createClickEffect(rect.left + rect.width/2, rect.top + rect.height/2);
+          
+          makeMove(index);
+        }, 800);
+      }
+    }
+
+    // Get random move for computer
+    function getRandomMove() {
+      const emptyIndices = board.map((v, i) => v === "" ? i : null).filter(i => i !== null);
+      return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+    }
+
+    // Get medium difficulty move for computer
+    function getMediumMove() {
+      // 1. Win if possible
+      for (let i = 0; i < 9; i++) {
+        if (board[i] === "") {
+          board[i] = "O";
+          if (checkWin("O")) {
+            board[i] = "";
+            return i;
+          }
+          board[i] = "";
+        }
+      }
+      
+      // 2. Block if player can win
+      for (let i = 0; i < 9; i++) {
+        if (board[i] === "") {
+          board[i] = "X";
+          if (checkWin("X")) {
+            board[i] = "";
+            return i;
+          }
+          board[i] = "";
+        }
+      }
+      
+      // 3. Center if available
+      if (board[4] === "") return 4;
+      
+      // 4. Random corner
+      const corners = [0, 2, 6, 8].filter(i => board[i] === "");
+      if (corners.length > 0) {
+        return corners[Math.floor(Math.random() * corners.length)];
+      }
+      
+      // 5. Random available
+      return getRandomMove();
+    }
+
+    // Get best move using minimax algorithm
+    function getBestMove() {
+      let bestScore = -Infinity;
+      let move = -1;
+
+      for (let i = 0; i < 9; i++) {
+        if (board[i] === "") {
+          board[i] = "O";
+          let score = minimax(board, 0, false);
+          board[i] = "";
+          if (score > bestScore) {
+            bestScore = score;
+            move = i;
+          }
+        }
+      }
+      return move;
+    }
+
+    // Minimax algorithm for AI
+    function minimax(board, depth, isMaximizing) {
+      // Check terminal states
+      if (checkWin("O")) return 10 - depth;
+      if (checkWin("X")) return depth - 10;
+      if (isDraw()) return 0;
+
+      if (isMaximizing) {
+        let best = -Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (board[i] === "") {
+            board[i] = "O";
+            best = Math.max(best, minimax(board, depth + 1, false));
+            board[i] = "";
+          }
+        }
+        return best;
+      } else {
+        let best = Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (board[i] === "") {
+            board[i] = "X";
+            best = Math.min(best, minimax(board, depth + 1, true));
+            board[i] = "";
+          }
+        }
+        return best;
+      }
+    }
+
+    // Check for win
+    function checkWin(player) {
+      return winningCombinations.some(combination => {
+        return combination.every(index => board[index] === player);
+      });
+    }
+
+    // Highlight winning cells
+    function highlightWinningCells(player) {
+      winningCombinations.forEach(combination => {
+        if (combination.every(index => board[index] === player)) {
+          combination.forEach(index => {
+            document.querySelector(`.cell[data-index="${index}"]`).classList.add('winner-cell');
+          });
+        }
+      });
+    }
+
+    // Check for draw
+    function isDraw() {
+      return board.every(cell => cell !== "");
+    }
+
+    // Start timer
+    function startTimer() {
+      seconds = 0;
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        seconds++;
+        updateTimerDisplay();
+      }, 1000);
+    }
+
+    // Stop timer
+    function stopTimer() {
+      clearInterval(timerInterval);
+    }
+
+    // Update timer display
+    function updateTimerDisplay() {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      
+      // Using string concatenation instead of template literals
+      if (remainingSeconds < 10) {
+        timerElement.textContent = minutes + ":0" + remainingSeconds;
+      } else {
+        timerElement.textContent = minutes + ":" + remainingSeconds;
+      }
+    }
+
+    // Reset game
+    function resetGame() {
+      board = ["", "", "", "", "", "", "", "", ""];
+      currentPlayer = "X";
+      gameActive = true;
+      
+      if (gameMode === 'single') {
+        difficulty = difficultySelect.value;
+      }
+      
+      statusElement.textContent = "";
+      
+      createBoard();
+      updatePlayerIndicator();
+      
+      stopTimer();
+      startTimer();
+      
+      // In online mode, notify the opponent
+      if (gameMode === 'online' && conn && conn.open) {
+        conn.send({
+          type: 'reset'
+        });
+      }
+    }
+
+    // Event listeners
+    singlePlayerBtn.addEventListener('click', () => {
+      if (soundEnabled) {
+        sounds.buttonClick.play();
+      }
+      
+      showScreen(gameScreen);
+      gameMode = "single";
+      gameModeTitle.textContent = "SINGLE PLAYER";
+      playerXName.textContent = "You";
+      playerOName.textContent = "Computer";
+      document.querySelector('.difficulty-select').style.display = 'block';
+      resetGame();
+      showCaption('Single player mode started!', 'info');
+    });
+
+    twoPlayerBtn.addEventListener('click', () => {
+      if (soundEnabled) {
+        sounds.buttonClick.play();
+      }
+      
+      showScreen(multiplayerScreen);
+      showCaption('Create or join a multiplayer game', 'info');
+    });
+
+    howToPlayBtn.addEventListener('click', () => {
+      if (soundEnabled) {
+        sounds.buttonClick.play();
+      }
+      
+      showScreen(howToPlayScreen);
+    });
+
+    backBtn.addEventListener('click', () => {
+      if (soundEnabled) {
+        sounds.buttonClick.play();
+      }
+      
+      showScreen(menuScreen);
+      stopTimer();
+    });
+
+    multiplayerBackBtn.addEventListener('click', () => {
+      if (soundEnabled) {
+        sounds.buttonClick.play();
+      }
+      
+      showScreen(menuScreen);
+    });
+
+    howToPlayBackBtn.addEventListener('click', () => {
+      if (soundEnabled) {
+        sounds.buttonClick.play();
+      }
+      
+      showScreen(menuScreen);
+    });
+
+    createGameBtn.addEventListener('click', createGame);
+
+    copyLinkBtn.addEventListener('click', copyLink);
+
+    joinGameBtn.addEventListener('click', () => {
+      const peerId = peerIdInput.value.trim();
+      if (peerId) {
+        joinGame(peerId);
+      } else {
+        alert("Please enter a valid game ID");
+        showCaption('Please enter a valid game ID', 'info');
+      }
+    });
+
+    boardElement.addEventListener('click', handleCellClick);
+
+    resetButton.addEventListener('click', () => {
+      if (soundEnabled) {
+        sounds.buttonClick.play();
+      }
+      
+      resetGame();
+      showCaption('Game has been reset', 'info');
+    });
+
+    difficultySelect.addEventListener('change', () => {
+      if (soundEnabled) {
+        sounds.menuSelect.play();
+      }
+      
+      difficulty = difficultySelect.value;
+      if (gameMode === 'single' && gameActive) {
+        resetGame();
+        showCaption('Difficulty changed to ' + difficulty, 'info');
+      }
+    });
+
+    soundToggleBtn.addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      
+      // Update button icon
+      soundToggleBtn.innerHTML = soundEnabled ? '🔊' : '🔇';
+      
+      // Set all sound volumes
+      Object.values(sounds).forEach(sound => {
+        sound.volume = soundEnabled ? 0.3 : 0;
+      });
+      sounds.win.volume = soundEnabled ? 0.5 : 0;
+      sounds.cellHover.volume = soundEnabled ? 0.05 : 0;
+      
+      // Play a sound to confirm the change if sound is enabled
+      if (soundEnabled) {
+        sounds.buttonClick.play();
+      }
+      
+      showCaption(soundEnabled ? 'Sound enabled' : 'Sound muted', 'info');
+    });
+
+    // Preload sounds
+    window.addEventListener('load', () => {
+      Object.values(sounds).forEach(sound => {
+        sound.load();
+      });
+    });
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      createBoard();
+      checkForInvitation();
+    });
+  </script>
+</body>
+</html>
